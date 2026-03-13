@@ -14,7 +14,7 @@ pub mod plus_plus_init;
 // - Mini-batch K-means is not worth it. It's slower than classic K-means on the relevant
 //   datasets.
 
-pub const MAX_CENTROIDS: usize = 4;
+pub const MAX_CENTROIDS: usize = 16;
 pub const ADAPTIVE_MIN_CENTROID_DISTANCE_SQUARED: f32 = 0.005;
 
 // sklearn KMeans defaults + inspired by testing
