@@ -1,0 +1,39 @@
+[package]
+name = "okmain"
+version = "0.2.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "OK main colors of your image"
+homepage = "https://github.com/si14/okmain"
+repository = "https://github.com/si14/okmain/tree/main/crates/okmain"
+readme = "README.md"
+keywords = ["color", "image", "oklab", "palette"]
+categories = ["multimedia::images"]
+exclude = ["src/bin/*", "benches/*", "AGENTS.md"]
+
+[lib]
+name = "okmain"
+path = "src/lib.rs"
+
+[features]
+default = []
+image = ["dep:image"]
+unstable = []
+_debug = []
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("_debug"))'] }
+
+[dependencies]
+snafu = { workspace = true }
+oklab = { version = "1" }
+fast-srgb8 = { version = "1" }
+rand = { version = "0.10.0", default-features = false }
+rand_xoshiro = { version = "0.8" }
+image = { version = "0.25", optional = true, default-features = false }
+rgb = { version = "0.8" }
+
+[dev-dependencies]
+pretty_assertions = { version = "1", features = ["unstable"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }

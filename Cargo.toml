@@ -1,0 +1,11 @@
+[workspace]
+members = ["crates/okmain", "crates/api"]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.93"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+snafu = { version = "0.8", features = ["rust_1_81"] }

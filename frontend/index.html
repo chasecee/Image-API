@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Color Extractor</title>
+  <style>
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a24;
+      --surface2: #24242f;
+      --border: #2e2e3e;
+      --text: #e8e8f0;
+      --muted: #888899;
+      --accent: #7c6af7;
+      --accent2: #a78bfa;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent2), #c084fc, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .upload-zone {
+      background: var(--surface);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: #1e1e2e;
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .upload-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .upload-zone h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+
+    .upload-zone p {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .n-control {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.4rem 0.8rem;
+    }
+
+    .n-control input[type="number"] {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 1rem;
+      width: 3rem;
+      text-align: center;
+      outline: none;
+    }
+
+    .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 1.4rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover { background: var(--accent2); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Results */
+    #result-section { display: none; margin-bottom: 3rem; }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .result-grid { grid-template-columns: 1fr; }
+    }
+
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .result-card img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .color-list {
+      padding: 1rem;
+    }
+
+    .color-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.1s;
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.5rem;
+    }
+
+    .color-item:last-child { border-bottom: none; }
+    .color-item:hover { background: var(--surface2); }
+
+    .color-swatch {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .color-hex {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.9rem;
+      font-weight: 500;
+      flex: 1;
+    }
+
+    .copy-hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .color-item:hover .copy-hint { opacity: 1; }
+
+    .copied-toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: white;
+      padding: 0.5rem 1.2rem;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+
+    .copied-toast.show { opacity: 1; }
+
+    .palette-bar {
+      display: flex;
+      height: 10px;
+      border-radius: 0;
+      overflow: hidden;
+    }
+
+    .palette-bar-segment {
+      flex: 1;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 0.4rem;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Error */
+    .error-box {
+      background: #2d1a1a;
+      border: 1px solid #5a2020;
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      color: #f87171;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Seed images */
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.78rem;
+    }
+
+    .seed-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+
+    .seed-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .seed-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(124, 106, 247, 0.2);
+    }
+
+    .seed-card img {
+      width: 100%;
+      height: 90px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .seed-card .seed-name {
+      padding: 0.4rem 0.5rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .json-toggle {
+      font-size: 0.8rem;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .json-toggle:hover { background: var(--surface2); color: var(--text); }
+
+    .json-block {
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #a5f3fc;
+      margin: 0.75rem 1rem 1rem;
+      display: none;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Color Extractor</h1>
+      <p>Upload any image to extract its dominant colors using okmain + Oklab</p>
+    </header>
+
+    <div id="error-box" class="error-box" style="display:none"></div>
+
+    <div class="upload-zone" id="drop-zone">
+      <input type="file" id="file-input" accept="image/*" />
+      <span class="upload-icon">🖼️</span>
+      <h2>Drop an image or click to browse</h2>
+      <p>Supports JPEG, PNG, WebP, GIF, BMP, TIFF</p>
+    </div>
+
+    <div class="controls">
+      <div class="n-control">
+        <label for="n-input">Colors:</label>
+        <input type="number" id="n-input" min="1" max="10" value="5" />
+      </div>
+      <button class="btn" id="analyze-btn" disabled>Analyze</button>
+    </div>
+
+    <p class="section-title">Seed images from okmain test suite</p>
+    <div class="seed-grid" id="seed-grid"></div>
+
+    <div id="result-section">
+      <p class="section-title">Results</p>
+      <div class="result-grid">
+        <div class="result-card">
+          <img id="result-img" src="" alt="Uploaded image" />
+          <div class="palette-bar" id="palette-bar"></div>
+        </div>
+        <div class="result-card">
+          <div style="padding:1rem; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:600; font-size:0.95rem;">Dominant Colors</span>
+            <button class="json-toggle" id="json-toggle">{ } JSON</button>
+          </div>
+          <div class="color-list" id="color-list"></div>
+          <div class="json-block" id="json-block"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="copied-toast" id="toast">Copied!</div>
+
+  <script>
+    const SEED_IMAGES = [
+      { name: 'Autumn Landscape', path: '/test_images/autumn_landscape.jpg' },
+      { name: 'The Scream', path: '/test_images/the_scream.jpg' },
+      { name: 'Supremus 55', path: '/test_images/supremus_55.jpg' },
+      { name: 'Red Moon', path: '/test_images/red_moon.jpg' },
+      { name: 'Milkmaid (small)', path: '/test_images/het_melkmeisje_small.jpg' },
+      { name: 'Kodak 01', path: '/test_images/kodim01.png' },
+      { name: 'Kodak 23', path: '/test_images/kodim23.png' },
+      { name: 'Palette', path: '/test_images/palette.png' },
+      { name: 'Ocean', path: '/test_images/ocean.png' },
+      { name: 'Sunset', path: '/test_images/sunset.png' },
+      { name: 'Forest', path: '/test_images/forest.png' },
+      { name: 'Flowers', path: '/test_images/flowers.png' },
+    ];
+
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const analyzeBtn = document.getElementById('analyze-btn');
+    const nInput = document.getElementById('n-input');
+    const resultSection = document.getElementById('result-section');
+    const resultImg = document.getElementById('result-img');
+    const colorList = document.getElementById('color-list');
+    const paletteBar = document.getElementById('palette-bar');
+    const errorBox = document.getElementById('error-box');
+    const jsonBlock = document.getElementById('json-block');
+    const jsonToggle = document.getElementById('json-toggle');
+    const toast = document.getElementById('toast');
+
+    let selectedFile = null;
+    let selectedUrl = null; // for seed images
+
+    // Seed grid
+    const seedGrid = document.getElementById('seed-grid');
+    SEED_IMAGES.forEach(({ name, path }) => {
+      const card = document.createElement('div');
+      card.className = 'seed-card';
+      card.innerHTML = `<img src="${path}" alt="${name}" loading="lazy" /><div class="seed-name">${name}</div>`;
+      card.addEventListener('click', () => {
+        selectedFile = null;
+        selectedUrl = path;
+        resultImg.src = path;
+        analyzeBtn.disabled = false;
+        errorBox.style.display = 'none';
+        dropZone.querySelector('h2').textContent = name;
+        dropZone.querySelector('p').textContent = 'Click "Analyze" to extract colors';
+      });
+      seedGrid.appendChild(card);
+    });
+
+    // File input
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (file) setFile(file);
+    });
+
+    function setFile(file) {
+      selectedFile = file;
+      selectedUrl = null;
+      resultImg.src = URL.createObjectURL(file);
+      analyzeBtn.disabled = false;
+      errorBox.style.display = 'none';
+      dropZone.querySelector('h2').textContent = file.name;
+      dropZone.querySelector('p').textContent = `${(file.size / 1024).toFixed(1)} KB · ${file.type || 'image'}`;
+    }
+
+    // Drag and drop
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) setFile(file);
+    });
+
+    // Paste support
+    document.addEventListener('paste', e => {
+      const item = [...e.clipboardData.items].find(i => i.type.startsWith('image/'));
+      if (item) setFile(item.getAsFile());
+    });
+
+    // JSON toggle
+    jsonToggle.addEventListener('click', () => {
+      const visible = jsonBlock.style.display === 'block';
+      jsonBlock.style.display = visible ? 'none' : 'block';
+      jsonToggle.textContent = visible ? '{ } JSON' : '✕ JSON';
+    });
+
+    // Analyze
+    analyzeBtn.addEventListener('click', analyze);
+
+    async function analyze() {
+      const n = parseInt(nInput.value) || 5;
+      analyzeBtn.disabled = true;
+      analyzeBtn.innerHTML = '<span class="spinner"></span>Analyzing…';
+      errorBox.style.display = 'none';
+      resultSection.style.display = 'none';
+
+      try {
+        let blob;
+        if (selectedFile) {
+          blob = selectedFile;
+        } else if (selectedUrl) {
+          const res = await fetch(selectedUrl);
+          blob = await res.blob();
+        } else {
+          throw new Error('No image selected');
+        }
+
+        const form = new FormData();
+        form.append('image', blob, 'image.jpg');
+
+        const resp = await fetch(`/colors?n=${n}`, { method: 'POST', body: form });
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          throw new Error(data.error || `HTTP ${resp.status}`);
+        }
+
+        renderResults(data, n);
+      } catch (err) {
+        errorBox.textContent = `Error: ${err.message}`;
+        errorBox.style.display = 'block';
+      } finally {
+        analyzeBtn.disabled = false;
+        analyzeBtn.textContent = 'Analyze';
+      }
+    }
+
+    function renderResults(data, n) {
+      const colors = data.colors || [];
+
+      // Palette bar
+      paletteBar.innerHTML = colors.map(hex =>
+        `<div class="palette-bar-segment" style="background:${hex}"></div>`
+      ).join('');
+
+      // Color list
+      colorList.innerHTML = colors.map((hex, i) => `
+        <div class="color-item" onclick="copyHex('${hex}')">
+          <div class="color-swatch" style="background:${hex}"></div>
+          <span class="color-hex">${hex}</span>
+          <span class="copy-hint">copy</span>
+        </div>
+      `).join('');
+
+      // JSON block
+      jsonBlock.textContent = JSON.stringify(data, null, 2);
+      jsonBlock.style.display = 'none';
+      jsonToggle.textContent = '{ } JSON';
+
+      resultSection.style.display = 'block';
+      resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function copyHex(hex) {
+      navigator.clipboard.writeText(hex).then(() => {
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 1500);
+      });
+    }
+  </script>
+</body>
+</html>
