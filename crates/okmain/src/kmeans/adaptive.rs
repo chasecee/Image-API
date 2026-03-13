@@ -31,10 +31,10 @@ pub struct AdaptiveResult {
     pub converged: Vec<bool>,
 }
 
-pub fn find_centroids(rng: &mut impl RngExt, sample: &SampledOklabSoA) -> AdaptiveResult {
-    let mut k = MAX_CENTROIDS;
-    let mut loop_iterations = Vec::with_capacity(MAX_CENTROIDS);
-    let mut converged = Vec::with_capacity(MAX_CENTROIDS);
+pub fn find_centroids(rng: &mut impl RngExt, sample: &SampledOklabSoA, max_k: usize) -> AdaptiveResult {
+    let mut k = max_k.clamp(1, MAX_CENTROIDS);
+    let mut loop_iterations = Vec::with_capacity(k);
+    let mut converged = Vec::with_capacity(k);
 
     loop {
         let result = lloyds::find_centroids(rng, sample, k);

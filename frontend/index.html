@@ -112,35 +112,50 @@
 
     .color-rows { margin-bottom: 2rem; }
 
-    .color-row {
+    .palette-row {
+      display: flex;
       height: 72px;
+      margin-bottom: 2px;
+      overflow: hidden;
+    }
+
+    .palette-cell {
+      flex: 1;
       display: flex;
       align-items: center;
-      padding: 0 1.25rem;
+      justify-content: center;
       cursor: pointer;
       transition: opacity 0.1s;
-      margin-bottom: 2px;
+      overflow: hidden;
+      min-width: 0;
+      position: relative;
     }
 
-    .color-row:hover { opacity: 0.88; }
+    .palette-cell:hover { opacity: 0.88; }
 
-    .color-row-hex {
+    .palette-hex {
       font-family: 'JetBrains Mono', 'Fira Code', monospace;
-      font-size: 0.88rem;
+      font-size: 0.82rem;
       font-weight: 500;
       letter-spacing: 0.04em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 0.5rem;
+      max-width: 100%;
     }
 
-    .color-row-copy {
-      margin-left: auto;
-      font-size: 0.7rem;
+    .palette-copy {
+      position: absolute;
+      bottom: 0.35rem;
+      font-size: 0.62rem;
       opacity: 0;
       transition: opacity 0.15s;
       text-transform: uppercase;
       letter-spacing: 0.1em;
     }
 
-    .color-row:hover .color-row-copy { opacity: 0.6; }
+    .palette-cell:hover .palette-copy { opacity: 0.6; }
 
     /* Section label */
     .section-label {
@@ -412,14 +427,20 @@
 
     function renderResults(data) {
       const colors = data.colors || [];
+      if (!colors.length) return;
 
-      colorRows.innerHTML = colors.map(hex => {
-        const lum = luminance(hex);
-        const fg = lum > 0.35 ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)';
-        return `<div class="color-row" style="background:${hex};color:${fg}" onclick="copyHex('${hex}')">
-          <span class="color-row-hex">${hex}</span>
-          <span class="color-row-copy">copy</span>
-        </div>`;
+      // Each row i shows a palette of colors[0..i] side by side
+      colorRows.innerHTML = colors.map((_, rowIdx) => {
+        const palette = colors.slice(0, rowIdx + 1);
+        const cells = palette.map(hex => {
+          const lum = luminance(hex);
+          const fg = lum > 0.35 ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)';
+          return `<div class="palette-cell" style="background:${hex};color:${fg}" onclick="copyHex('${hex}')">
+            <span class="palette-hex">${hex}</span>
+            <span class="palette-copy">copy</span>
+          </div>`;
+        }).join('');
+        return `<div class="palette-row">${cells}</div>`;
       }).join('');
 
       resultSection.style.display = 'block';

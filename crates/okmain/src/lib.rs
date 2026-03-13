@@ -301,6 +301,9 @@ pub enum ConfigError {
     },
 }
 
+/// Default maximum number of colors to extract.
+pub const DEFAULT_MAX_COLORS: usize = 4;
+
 /// Tuning parameters for [`colors_with_config`] and [`colors_debug`].
 ///
 /// Use [`Config::default()`] to get the recommended starting values, then override individual
@@ -315,6 +318,11 @@ pub enum ConfigError {
 /// ```
 #[derive(Debug, Clone, Copy)]
 pub struct Config {
+    /// Maximum number of dominant colors to extract (1–16). The algorithm may return fewer
+    /// if some centroids are too similar.
+    ///
+    /// Default value in [`DEFAULT_MAX_COLORS`].
+    pub max_colors: usize,
     /// The algorithm uses a mask to prioritize central pixels while considering the relative
     /// color dominance. The mask is a 1.0-weight rectangle starting at
     /// `mask_saturated_threshold * 100%` and finishing at
@@ -356,6 +364,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            max_colors: DEFAULT_MAX_COLORS,
             mask_saturated_threshold: DEFAULT_MASK_SATURATED_THRESHOLD,
             mask_weight: DEFAULT_MASK_WEIGHT,
             mask_weighted_counts_weight: DEFAULT_WEIGHTED_COUNTS_WEIGHT,
@@ -506,7 +515,7 @@ fn colors_internal(
 
     let oklab_soa = sample::sample(input.width, input.height, input.buf);
 
-    let centroids_result = kmeans::adaptive::find_centroids(&mut rng, &oklab_soa);
+    let centroids_result = kmeans::adaptive::find_centroids(&mut rng, &oklab_soa, config.max_colors);
 
     let num_centroids = centroids_result.centroids.len();
 

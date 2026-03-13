@@ -5,7 +5,7 @@ use axum::{
     response::IntoResponse,
 };
 use image::ImageReader;
-use okmain::InputImage;
+use okmain::{Config, InputImage};
 use serde::Deserialize;
 use std::io::Cursor;
 use tower_http::{cors::CorsLayer, services::ServeDir};
@@ -109,11 +109,14 @@ async fn post_colors(
     };
 
     // Run dominant-color extraction (okmain k-means in Oklab space)
-    let raw_colors = okmain::colors(input);
+    // Pass n directly so the algorithm targets the requested number of clusters.
+    let raw_colors = okmain::colors_with_config(input, Config {
+        max_colors: n,
+        ..Config::default()
+    }).expect("default config values should never fail");
 
     let colors: Vec<String> = raw_colors
         .into_iter()
-        .take(n)
         .map(|c| format!("#{:02X}{:02X}{:02X}", c.r, c.g, c.b))
         .collect();
 
