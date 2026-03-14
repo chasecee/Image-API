@@ -1,3 +1,5 @@
+mod icc;
+
 use axum::{
     Json, Router,
     extract::{DefaultBodyLimit, Multipart, Query},
@@ -88,12 +90,18 @@ async fn post_colors(
         }
     };
 
-    // Decode the image
-    let img = match ImageReader::new(Cursor::new(&bytes))
-        .with_guessed_format()
-        .map_err(|e| e.to_string())
-        .and_then(|r| r.decode().map_err(|e| e.to_string()))
-    {
+    // Decode the image (keep the format so we can apply ICC correction below).
+    let reader = match ImageReader::new(Cursor::new(&bytes)).with_guessed_format() {
+        Ok(r) => r,
+        Err(e) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({ "error": format!("Failed to read image: {e}") })),
+            );
+        }
+    };
+    let format = reader.format();
+    let img = match reader.decode() {
         Ok(img) => img,
         Err(e) => {
             return (
@@ -103,8 +111,24 @@ async fn post_colors(
         }
     };
 
-    // Convert to RGB8 and build an okmain InputImage
-    let rgb_img = img.to_rgb8();
+    // Convert to RGB8.
+    let mut rgb_img = img.to_rgb8();
+
+    // Apply ICC color-profile correction (JPEG and PNG).
+    //
+    // The `image` crate ignores embedded ICC profiles, so cameras/phones that
+    // encode images in Display P3 (nearly all iPhones) produce pixel values
+    // that are silently misinterpreted as sRGB, collapsing vibrant pinks,
+    // greens and yellows into muted brownish tones.  We extract the ICC data
+    // from the raw bytes (APP2 for JPEG, iCCP chunk for PNG), compute the
+    // linear-light source→sRGB transform matrix, and apply it in-place before
+    // colour extraction.
+    let _ = format; // format detection is done inside extract_icc via magic bytes
+    if let Some(icc_data) = icc::extract_icc(&bytes) {
+        if let Some(matrix) = icc::icc_to_srgb_matrix(&icc_data) {
+            icc::apply_matrix_to_rgb8(rgb_img.as_mut(), matrix);
+        }
+    }
     let input = match InputImage::try_from(&rgb_img) {
         Ok(i) => i,
         Err(e) => {
