@@ -102,6 +102,31 @@
     /* Results */
     #result-section { display: none; margin-bottom: 3rem; }
 
+    .image-info {
+      display: none;
+      gap: 0.4rem;
+      align-items: center;
+      padding: 0.45rem 0 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .info-chip {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.03em;
+      background: #111;
+      border: 1px solid #222;
+      padding: 0.15rem 0.5rem;
+      color: #555;
+    }
+
+    .info-chip.converted {
+      border-color: #4a2e00;
+      color: #c07000;
+    }
+
+    .info-sep { color: #333; font-size: 0.75rem; }
+
     .result-image-wrap { margin-bottom: 2px; }
     .result-image-wrap img {
       width: 100%;
@@ -357,6 +382,7 @@
         <img id="result-img" src="" alt="Selected image" />
         <canvas id="color-group-canvas"></canvas>
       </div>
+      <div class="image-info" id="image-info"></div>
       <div class="color-rows" id="color-rows"></div>
     </div>
 
@@ -398,6 +424,7 @@
     const uploadSub = document.getElementById('upload-sub');
     const colorGroupToggle = document.getElementById('color-group-toggle');
     const colorGroupCanvas = document.getElementById('color-group-canvas');
+    const imageInfo = document.getElementById('image-info');
 
     let selectedFile = null;
     let selectedUrl = null;
@@ -523,6 +550,22 @@
       colorGroupToggle.checked = false;
       resultImg.style.display = 'block';
       colorGroupCanvas.style.display = 'none';
+
+      // Image metadata bar
+      const info = data.image_info;
+      if (info) {
+        const csText = info.icc_converted
+          ? `${info.color_space} → sRGB`
+          : info.color_space;
+        const csClass = info.icc_converted ? 'info-chip converted' : 'info-chip';
+        imageInfo.innerHTML =
+          `<span class="info-chip">${info.format}</span>` +
+          `<span class="info-sep">·</span>` +
+          `<span class="${csClass}">${csText}</span>`;
+        imageInfo.style.display = 'flex';
+      } else {
+        imageInfo.style.display = 'none';
+      }
 
       // Each row i shows a palette of colors[0..i] side by side
       colorRows.innerHTML = colors.map((_, rowIdx) => {
