@@ -269,6 +269,11 @@
         <input type="range" id="n-input" min="1" max="8" value="5" />
         <span class="n-value" id="n-display">5</span>
       </div>
+      <div class="slider-control">
+        <label for="dist-input">Oklab Δ</label>
+        <input type="range" id="dist-input" min="0" max="0.15" step="0.01" value="0.01" />
+        <span class="n-value" id="dist-display">0.01</span>
+      </div>
       <button class="btn" id="analyze-btn" disabled>Analyze</button>
     </div>
 
@@ -306,6 +311,8 @@
     const analyzeBtn = document.getElementById('analyze-btn');
     const nInput = document.getElementById('n-input');
     const nDisplay = document.getElementById('n-display');
+    const distInput = document.getElementById('dist-input');
+    const distDisplay = document.getElementById('dist-display');
     const resultSection = document.getElementById('result-section');
     const resultImg = document.getElementById('result-img');
     const colorRows = document.getElementById('color-rows');
@@ -319,6 +326,7 @@
 
     // Slider
     nInput.addEventListener('input', () => nDisplay.textContent = nInput.value);
+    distInput.addEventListener('input', () => distDisplay.textContent = parseFloat(distInput.value).toFixed(2));
 
     // Seed grid
     const seedGrid = document.getElementById('seed-grid');
@@ -383,6 +391,7 @@
 
     async function analyze() {
       const n = parseInt(nInput.value) || 5;
+      const minDist = parseFloat(distInput.value);
       analyzeBtn.disabled = true;
       analyzeBtn.innerHTML = '<span class="spinner"></span>Analyzing';
       errorBox.style.display = 'none';
@@ -403,7 +412,7 @@
         const form = new FormData();
         form.append('image', blob, 'image.jpg');
 
-        const resp = await fetch(`/colors?n=${n}`, { method: 'POST', body: form });
+        const resp = await fetch(`/colors?n=${n}&min_dist=${minDist}`, { method: 'POST', body: form });
         const data = await resp.json();
 
         if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);

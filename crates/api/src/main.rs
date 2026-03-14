@@ -18,10 +18,16 @@ const MAX_BODY_BYTES: usize = 50 * 1024 * 1024;
 struct ColorParams {
     #[serde(default = "default_n")]
     n: usize,
+    #[serde(default = "default_min_dist")]
+    min_dist: f32,
 }
 
 fn default_n() -> usize {
     5
+}
+
+fn default_min_dist() -> f32 {
+    okmain::DEFAULT_ADAPTIVE_MIN_CENTROID_DISTANCE
 }
 
 async fn post_colors(
@@ -29,6 +35,7 @@ async fn post_colors(
     mut multipart: Multipart,
 ) -> impl IntoResponse {
     let n = params.n.max(1);
+    let min_dist = params.min_dist.max(0.0);
 
     // Walk fields; accept the first one named "image" or "file",
     // or the first field that has an image/* content-type.
@@ -112,6 +119,7 @@ async fn post_colors(
     // Pass n directly so the algorithm targets the requested number of clusters.
     let raw_colors = okmain::colors_with_config(input, Config {
         max_colors: n,
+        adaptive_min_centroid_distance: min_dist,
         ..Config::default()
     }).expect("default config values should never fail");
 

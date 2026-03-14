@@ -304,6 +304,10 @@ pub enum ConfigError {
 /// Default maximum number of colors to extract.
 pub const DEFAULT_MAX_COLORS: usize = 4;
 
+/// Default minimum Oklab Euclidean distance between two centroids before they are considered
+/// too similar and the cluster count is reduced.
+pub const DEFAULT_ADAPTIVE_MIN_CENTROID_DISTANCE: f32 = 0.01;
+
 /// Tuning parameters for [`colors_with_config`] and [`colors_debug`].
 ///
 /// Use [`Config::default()`] to get the recommended starting values, then override individual
@@ -359,6 +363,15 @@ pub struct Config {
     ///
     /// Default value in [`DEFAULT_CHROMA_WEIGHT`].
     pub chroma_weight: f32,
+    /// Minimum Oklab Euclidean distance between two centroids for them to be considered
+    /// distinct. When any pair of centroids is closer than this value, the algorithm reduces
+    /// the cluster count by one and re-runs. Set to `0.0` to disable the adaptive reduction
+    /// and always return exactly `max_colors` clusters.
+    ///
+    /// Reasonable range: `0.0` (off) – `0.15` (very aggressive merging).
+    ///
+    /// Default value in [`DEFAULT_ADAPTIVE_MIN_CENTROID_DISTANCE`].
+    pub adaptive_min_centroid_distance: f32,
 }
 
 impl Default for Config {
@@ -369,6 +382,7 @@ impl Default for Config {
             mask_weight: DEFAULT_MASK_WEIGHT,
             mask_weighted_counts_weight: DEFAULT_WEIGHTED_COUNTS_WEIGHT,
             chroma_weight: DEFAULT_CHROMA_WEIGHT,
+            adaptive_min_centroid_distance: DEFAULT_ADAPTIVE_MIN_CENTROID_DISTANCE,
         }
     }
 }
@@ -515,7 +529,8 @@ fn colors_internal(
 
     let oklab_soa = sample::sample(input.width, input.height, input.buf);
 
-    let centroids_result = kmeans::adaptive::find_centroids(&mut rng, &oklab_soa, config.max_colors);
+    let min_dist_sq = config.adaptive_min_centroid_distance * config.adaptive_min_centroid_distance;
+    let centroids_result = kmeans::adaptive::find_centroids(&mut rng, &oklab_soa, config.max_colors, min_dist_sq);
 
     let num_centroids = centroids_result.centroids.len();
 

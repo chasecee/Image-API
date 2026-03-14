@@ -15,7 +15,6 @@ pub mod plus_plus_init;
 //   datasets.
 
 pub const MAX_CENTROIDS: usize = 16;
-pub const ADAPTIVE_MIN_CENTROID_DISTANCE_SQUARED: f32 = 0.0001;
 
 // sklearn KMeans defaults + inspired by testing
 const LLOYDS_MAX_ITERATIONS: usize = 300;
