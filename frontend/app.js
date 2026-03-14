@@ -39,6 +39,15 @@ let selectedFile = null;
 let selectedUrl = null;
 let lastColors = [];
 
+// Info panel toggles
+document.querySelectorAll('.info-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const panel = document.getElementById(btn.dataset.panel);
+    const open = panel.classList.toggle('open');
+    btn.classList.toggle('active', open);
+  });
+});
+
 // Sliders
 nInput.addEventListener('input', () => nDisplay.textContent = nInput.value);
 distInput.addEventListener('input', () => distDisplay.textContent = parseFloat(distInput.value).toFixed(2));

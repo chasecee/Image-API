@@ -23,24 +23,48 @@
 
     <div class="controls">
       <div class="slider-control">
-        <label for="n-input">Colors</label>
+        <div class="slider-title-row">
+          <label for="n-input">Colors</label>
+          <div class="slider-title-right">
+            <span class="n-value" id="n-display">5</span>
+            <button class="info-btn" data-panel="info-n" aria-label="More info">ⓘ</button>
+          </div>
+        </div>
+        <div class="info-panel" id="info-n">Number of dominant colors to extract from the image (1–8).</div>
         <input type="range" id="n-input" min="1" max="8" value="5" />
-        <span class="n-value" id="n-display">5</span>
       </div>
       <div class="slider-control">
-        <label for="dist-input">Oklab Δ</label>
+        <div class="slider-title-row">
+          <label for="dist-input">Oklab Δ</label>
+          <div class="slider-title-right">
+            <span class="n-value" id="dist-display">0.01</span>
+            <button class="info-btn" data-panel="info-dist" aria-label="More info">ⓘ</button>
+          </div>
+        </div>
+        <div class="info-panel" id="info-dist">Minimum perceptual distance between colors in Oklab space. Higher = fewer but more distinct colors.</div>
         <input type="range" id="dist-input" min="0" max="0.15" step="0.01" value="0.01" />
-        <span class="n-value" id="dist-display">0.01</span>
       </div>
       <div class="slider-control">
-        <label for="chroma-input">Saturation bias</label>
+        <div class="slider-title-row">
+          <label for="chroma-input">Saturation bias</label>
+          <div class="slider-title-right">
+            <span class="n-value" id="chroma-display">0.70</span>
+            <button class="info-btn" data-panel="info-chroma" aria-label="More info">ⓘ</button>
+          </div>
+        </div>
+        <div class="info-panel" id="info-chroma">Boost for vibrant colors. Higher values prefer more saturated colors in the palette.</div>
         <input type="range" id="chroma-input" min="0" max="1" step="0.05" value="0.70" />
-        <span class="n-value" id="chroma-display">0.70</span>
       </div>
       <div class="slider-control">
-        <label for="mask-input">Center bias</label>
+        <div class="slider-title-row">
+          <label for="mask-input">Center bias</label>
+          <div class="slider-title-right">
+            <span class="n-value" id="mask-display">1.0</span>
+            <button class="info-btn" data-panel="info-mask" aria-label="More info">ⓘ</button>
+          </div>
+        </div>
+        <div class="info-panel" id="info-mask">Weight for colors near the image center. Higher values prioritize colors from the center of the image.</div>
         <input type="range" id="mask-input" min="0" max="1" step="0.1" value="1.0" />
-        <span class="n-value" id="mask-display">1.0</span>
       </div>
       <button class="btn" id="analyze-btn" disabled>Analyze</button>
     </div>
