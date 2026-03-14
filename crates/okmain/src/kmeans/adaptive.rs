@@ -1,4 +1,4 @@
-use super::{ADAPTIVE_MIN_CENTROID_DISTANCE_SQUARED, MAX_CENTROIDS, lloyds};
+use super::{MAX_CENTROIDS, lloyds};
 use crate::sample::SampledOklabSoA;
 use oklab::Oklab;
 use rand::RngExt;
@@ -10,12 +10,11 @@ fn squared_distance(x: Oklab, y: Oklab) -> f32 {
     dl.mul_add(dl, da.mul_add(da, db * db))
 }
 
-fn count_similar_clusters(centroids: &[Oklab]) -> usize {
+fn count_similar_clusters(centroids: &[Oklab], min_dist_sq: f32) -> usize {
     let mut count = 0;
     for i in 0..centroids.len() {
         for j in (i + 1)..centroids.len() {
-            if squared_distance(centroids[i], centroids[j]) < ADAPTIVE_MIN_CENTROID_DISTANCE_SQUARED
-            {
+            if squared_distance(centroids[i], centroids[j]) < min_dist_sq {
                 count += 1;
             }
         }
@@ -31,7 +30,7 @@ pub struct AdaptiveResult {
     pub converged: Vec<bool>,
 }
 
-pub fn find_centroids(rng: &mut impl RngExt, sample: &SampledOklabSoA, max_k: usize) -> AdaptiveResult {
+pub fn find_centroids(rng: &mut impl RngExt, sample: &SampledOklabSoA, max_k: usize, min_dist_sq: f32) -> AdaptiveResult {
     let mut k = max_k.clamp(1, MAX_CENTROIDS);
     let mut loop_iterations = Vec::with_capacity(k);
     let mut converged = Vec::with_capacity(k);
@@ -42,7 +41,7 @@ pub fn find_centroids(rng: &mut impl RngExt, sample: &SampledOklabSoA, max_k: us
         loop_iterations.push(result.loop_iterations);
         converged.push(result.converged);
 
-        let similar_count = count_similar_clusters(&result.centroids);
+        let similar_count = count_similar_clusters(&result.centroids, min_dist_sq);
         if similar_count == 0 || k <= 1 {
             break AdaptiveResult {
                 centroids: result.centroids,
@@ -83,7 +82,7 @@ mod tests {
                 b: 0.0,
             },
         ];
-        assert_eq!(count_similar_clusters(&centroids), 0);
+        assert_eq!(count_similar_clusters(&centroids, 0.001), 0);
     }
 
     #[test]
@@ -100,7 +99,7 @@ mod tests {
                 b: 0.2,
             },
         ];
-        assert_eq!(count_similar_clusters(&centroids), 1);
+        assert_eq!(count_similar_clusters(&centroids, 0.001), 1);
     }
 
     #[test]
@@ -110,7 +109,7 @@ mod tests {
             a: 0.3,
             b: 0.2,
         }];
-        assert_eq!(count_similar_clusters(&centroids), 0);
+        assert_eq!(count_similar_clusters(&centroids, 0.001), 0);
     }
 
     #[test]
@@ -137,7 +136,7 @@ mod tests {
                 b: 0.3,
             },
         ];
-        assert_eq!(count_similar_clusters(&centroids), 2);
+        assert_eq!(count_similar_clusters(&centroids, 0.001), 2);
     }
 
     #[test]
