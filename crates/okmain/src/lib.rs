@@ -578,7 +578,7 @@ fn colors_internal(
     // Sort by score descending
     scored_centroids.sort_by(|a, b| a.final_score.total_cmp(&b.final_score).reverse());
 
-    let result = scored_centroids.iter().map(|sc| sc.rgb).collect();
+    let result = scored_centroids.iter().take(config.max_colors).map(|sc| sc.rgb).collect();
 
     Ok((
         result,
