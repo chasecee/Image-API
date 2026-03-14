@@ -36,46 +36,88 @@ header p { color: #666; font-size: 0.8rem; margin-top: 0.2rem; }
 
 .controls {
   display: flex;
-  align-items: center;
-  gap: 1.25rem;
+  flex-direction: column;
+  gap: 0.5rem;
   margin-bottom: 2rem;
-  flex-wrap: wrap;
 }
 
 .slider-control {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  width: 100%;
 }
 
-.slider-control label { color: #666; font-size: 0.82rem; }
+.slider-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.slider-title-row label { color: #666; font-size: 0.82rem; }
+
+.slider-title-right {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.info-btn {
+  background: none;
+  border: none;
+  color: #444;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.15s;
+  user-select: none;
+}
+
+.info-btn:hover, .info-btn.active { color: #aaa; }
+
+.info-panel {
+  display: none;
+  font-size: 0.75rem;
+  color: #555;
+  background: #111;
+  border: 1px solid #222;
+  padding: 0.4rem 0.6rem;
+  margin-bottom: 0.35rem;
+  line-height: 1.45;
+}
+
+.info-panel.open { display: block; }
 
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
-  width: 120px;
-  height: 2px;
+  width: 100%;
+  height: 4px;
   background: #333;
   outline: none;
+  border-radius: 2px;
+  cursor: pointer;
+  display: block;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 26px;
+  height: 26px;
   background: #fff;
   cursor: pointer;
+  border-radius: 50%;
 }
 
 input[type="range"]::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: 26px;
+  height: 26px;
   background: #fff;
   cursor: pointer;
   border: none;
+  border-radius: 50%;
 }
 
-.n-value { font-size: 0.82rem; color: #fff; min-width: 1rem; }
+.n-value { font-size: 0.82rem; color: #fff; min-width: 2rem; text-align: right; }
 
 .btn {
   background: #fff;
@@ -262,7 +304,14 @@ input[type="range"]::-moz-range-thumb {
 
 @media (max-width: 480px) {
   .btn { margin-left: 0; }
-  .controls { flex-direction: column; align-items: flex-start; }
+  input[type="range"]::-webkit-slider-thumb {
+    width: 32px;
+    height: 32px;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 32px;
+    height: 32px;
+  }
 }
 
 /* Color group toggle */
