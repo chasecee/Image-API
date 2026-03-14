@@ -111,6 +111,17 @@ async fn post_colors(
         }
     };
 
+    // Format label for the response metadata.
+    let format_name = match format {
+        Some(image::ImageFormat::Jpeg) => "JPEG",
+        Some(image::ImageFormat::Png) => "PNG",
+        Some(image::ImageFormat::Gif) => "GIF",
+        Some(image::ImageFormat::WebP) => "WebP",
+        Some(image::ImageFormat::Bmp) => "BMP",
+        Some(image::ImageFormat::Tiff) => "TIFF",
+        _ => "Unknown",
+    };
+
     // Convert to RGB8.
     let mut rgb_img = img.to_rgb8();
 
@@ -123,11 +134,15 @@ async fn post_colors(
     // from the raw bytes (APP2 for JPEG, iCCP chunk for PNG), compute the
     // linear-light source→sRGB transform matrix, and apply it in-place before
     // colour extraction.
-    let _ = format; // format detection is done inside extract_icc via magic bytes
-    if let Some(icc_data) = icc::extract_icc(&bytes) {
-        if let Some(matrix) = icc::icc_to_srgb_matrix(&icc_data) {
-            icc::apply_matrix_to_rgb8(rgb_img.as_mut(), matrix);
-        }
+    let icc_data = icc::extract_icc(&bytes);
+    let color_space = icc_data
+        .as_deref()
+        .and_then(icc::profile_description)
+        .unwrap_or_else(|| "Untagged".to_string());
+    let matrix = icc_data.as_deref().and_then(icc::icc_to_srgb_matrix);
+    let icc_converted = matrix.is_some();
+    if let Some(m) = matrix {
+        icc::apply_matrix_to_rgb8(rgb_img.as_mut(), m);
     }
     let input = match InputImage::try_from(&rgb_img) {
         Ok(i) => i,
@@ -156,7 +171,15 @@ async fn post_colors(
 
     (
         StatusCode::OK,
-        Json(serde_json::json!({ "colors": colors, "count": count })),
+        Json(serde_json::json!({
+            "colors": colors,
+            "count": count,
+            "image_info": {
+                "format": format_name,
+                "color_space": color_space,
+                "icc_converted": icc_converted,
+            },
+        })),
     )
 }
 

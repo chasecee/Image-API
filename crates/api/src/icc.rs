@@ -197,6 +197,79 @@ pub fn extract_png_icc(data: &[u8]) -> Option<Vec<u8>> {
     None
 }
 
+/// Extract the human-readable profile description from an ICC profile.
+///
+/// ICC v2 profiles use a `desc` tag (ASCII).
+/// ICC v4 profiles use a `desc` tag whose *type* is `mluc` (UTF-16 BE).
+/// We try the first English record and fall back to the first record.
+pub fn profile_description(icc: &[u8]) -> Option<String> {
+    let tag_data = find_tag(icc, b"desc")?;
+    if tag_data.len() < 8 {
+        return None;
+    }
+
+    match &tag_data[0..4] {
+        // ICC v2 – plain ASCII
+        b"desc" => {
+            if tag_data.len() < 12 {
+                return None;
+            }
+            let count = u32::from_be_bytes(tag_data[8..12].try_into().ok()?) as usize;
+            if count == 0 || tag_data.len() < 12 + count {
+                return None;
+            }
+            let raw = &tag_data[12..12 + count];
+            let end = raw.iter().position(|&b| b == 0).unwrap_or(raw.len());
+            Some(String::from_utf8_lossy(&raw[..end]).trim().to_owned())
+        }
+        // ICC v4 – multi-localised Unicode (UTF-16 BE)
+        b"mluc" => {
+            if tag_data.len() < 16 {
+                return None;
+            }
+            let record_count =
+                u32::from_be_bytes(tag_data[8..12].try_into().ok()?) as usize;
+
+            let mut chosen: Option<(usize, usize)> = None; // (offset, len)
+            for i in 0..record_count {
+                let base = 16 + i * 12;
+                if base + 12 > tag_data.len() {
+                    break;
+                }
+                let lang = &tag_data[base..base + 2];
+                let len =
+                    u32::from_be_bytes(tag_data[base + 4..base + 8].try_into().ok()?)
+                        as usize;
+                let offset =
+                    u32::from_be_bytes(tag_data[base + 8..base + 12].try_into().ok()?)
+                        as usize;
+                if offset + len > tag_data.len() {
+                    continue;
+                }
+                if chosen.is_none() {
+                    chosen = Some((offset, len)); // first record as fallback
+                }
+                if lang == b"en" {
+                    chosen = Some((offset, len));
+                    break;
+                }
+            }
+            let (offset, len) = chosen?;
+            let utf16: Vec<u16> = tag_data[offset..offset + len]
+                .chunks_exact(2)
+                .map(|c| u16::from_be_bytes([c[0], c[1]]))
+                .collect();
+            Some(
+                String::from_utf16_lossy(&utf16)
+                    .trim_matches('\0')
+                    .trim()
+                    .to_owned(),
+            )
+        }
+        _ => None,
+    }
+}
+
 /// Compute the linear-light 3×3 matrix that converts from the ICC profile's
 /// color space to linear sRGB.  Returns `None` when the transform is
 /// indistinguishable from the identity (i.e. the source is already sRGB).
