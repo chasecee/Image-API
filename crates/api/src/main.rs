@@ -22,6 +22,8 @@ struct ColorParams {
     n: usize,
     #[serde(default = "default_min_dist")]
     min_dist: f32,
+    chroma_weight: Option<f32>,
+    mask_weight: Option<f32>,
 }
 
 fn default_n() -> usize {
@@ -38,6 +40,12 @@ async fn post_colors(
 ) -> impl IntoResponse {
     let n = params.n.max(1);
     let min_dist = params.min_dist.max(0.0);
+    let chroma_weight = params.chroma_weight
+        .unwrap_or(okmain::DEFAULT_CHROMA_WEIGHT)
+        .clamp(0.0, 1.0);
+    let mask_weight = params.mask_weight
+        .unwrap_or(okmain::DEFAULT_MASK_WEIGHT)
+        .clamp(0.0, 1.0);
 
     // Walk fields; accept the first one named "image" or "file",
     // or the first field that has an image/* content-type.
@@ -159,6 +167,9 @@ async fn post_colors(
     let raw_colors = okmain::colors_with_config(input, Config {
         max_colors: n,
         adaptive_min_centroid_distance: min_dist,
+        chroma_weight,
+        mask_weighted_counts_weight: 1.0 - chroma_weight,
+        mask_weight,
         ..Config::default()
     }).expect("default config values should never fail");
 
